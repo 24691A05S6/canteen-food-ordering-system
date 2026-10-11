@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details - Campus Canteen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">🍴 Campus Canteen</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="menu.html">Menu</a></li>
+                <li class="nav-item"><a class="nav-link" href="orders.html">My Orders</a></li>
+            </ul>
+            <a href="cart.html" class="nav-link text-white position-relative me-2">
+                🛒 Cart <span class="cart-badge" id="cartCount">0</span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container my-4" style="max-width: 700px;">
+    <h2 class="section-title">Order Details</h2>
+    <div id="orderDetail" class="bg-white rounded shadow-sm p-4"></div>
+    <a href="orders.html" class="btn btn-outline-secondary mt-3">← Back to My Orders</a>
+</div>
+
+<footer>
+    &copy; 2026 Campus Canteen. All rights reserved.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="script.js"></script>
+<script>
+    const STATUS_STEPS = ["PENDING", "CONFIRMED", "PREPARING", "READY", "COMPLETED"];
+
+    function renderOrderDetail(order) {
+        const container = document.getElementById("orderDetail");
+
+        if (!order) {
+            container.innerHTML = '<p class="text-muted">Order not found.</p>';
+            return;
+        }
+
+        const isCancelled = order.status === "CANCELLED";
+        const currentStep = STATUS_STEPS.indexOf(order.status);
+
+        const timeline = isCancelled
+            ? `<span class="badge-status status-cancelled">CANCELLED</span>`
+            : STATUS_STEPS.map((step, i) => `
+                <span class="badge-status ${i <= currentStep ? statusBadgeClass(step) : ''}"
+                      style="${i > currentStep ? 'background-color:#e0e0e0;color:#888;' : ''} margin-right:6px;">
+                    ${step}
+                </span>
+            `).join('→');
+
+        container.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h4>${order.orderNumber}</h4>
+                    <small class="text-muted">${new Date(order.orderDate).toLocaleString()}</small>
+                </div>
+            </div>
+
+            <div class="mb-3">${timeline}</div>
+            <hr>
+
+            <h6>Items</h6>
+            <table class="table">
+                <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead>
+                <tbody>
+                    ${order.items.map(i => `
+                        <tr>
+                            <td>${i.foodItem.name}</td>
+                            <td>${i.quantity}</td>
+                            <td>₹${i.price.toFixed(2)}</td>
+                            <td>₹${(i.price * i.quantity).toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+
+            <div class="d-flex justify-content-between mb-3">
+                <strong>Total</strong>
+                <strong style="color: var(--primary);">₹${order.totalAmount.toFixed(2)}</strong>
+            </div>
+            <hr>
+
+            <h6>Delivery Info</h6>
+            <p class="mb-1"><strong>Name:</strong> ${order.studentName}</p>
+            <p class="mb-1"><strong>Student ID:</strong> ${order.studentId}</p>
+            <p class="mb-1"><strong>Phone:</strong> ${order.studentPhone}</p>
+            <p class="mb-0"><strong>Option:</strong> ${order.deliveryOption}</p>
+        `;
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        updateCartBadge();
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get("id");
+
+        if (!id) {
+            document.getElementById("orderDetail").innerHTML = '<p class="text-muted">No order specified.</p>';
+            return;
+        }
+
+        const order = await fetchOrderById(id);
+        renderOrderDetail(order);
+    });
+</script>
+
+</body>
+</html>
